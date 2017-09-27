@@ -66,7 +66,7 @@ proc VOTRead {t fn} {
 		puts stderr "VOTRead: $err"
 	    }
 	}
-	
+
 	$xml free
 
 	close $fp
@@ -244,6 +244,8 @@ proc VOTElemStartCB {t name attlist args} {
 	    set T(Header) {}
 	    set T(HLines) 0
 	    set T(tree,prev) $name
+      set T(Nparams) 0
+      set T(params) {}
 	}
 	FIELD {
 	    set fname {}
@@ -322,7 +324,52 @@ proc VOTElemStartCB {t name attlist args} {
 	FIELDref -
 	DESCRIPTION -
 	COOSYS -
-	PARAM -
+	PARAM {
+      incr ${t}(Nparams)
+	    set parname {}
+	    set id {}
+	    set datatype {}
+	    set arraysize {}
+	    set width {}
+	    set precision {}
+	    set unit {}
+	    set ref {}
+	    set ucd {}
+      set parvalue {}
+	    foreach {key value} $attlist {
+		switch -- [string tolower $key] {
+		    name {set parname "$value"}
+		    id {set id "$value"}
+		    datatype {set datatype $value}
+		    arraysize {set arraysize $value}
+		    width {set width $value}
+		    precision {set precision $value}
+		    unit {set unit "$value"}
+		    ref {set ref "$value"}
+        ucd {set ucd "$value"}
+        value {set parvalue "$value"}
+		}
+	    }
+	    if {$parname != {}} {
+		lappend ${t}(ParHeader) "$parname"
+	    } else {
+		lappend ${t}(ParHeader) "$id"
+	    }
+	    lappend ${t}(ParId) "$id"
+	    lappend ${t}(ParDataType) $datatype
+	    lappend ${t}(ParArraySize) $arraysize
+	    lappend ${t}(ParWidth) $width
+	    lappend ${t}(ParPrecision) $precision
+	    lappend ${t}(ParUnit) "$unit"
+	    lappend ${t}(ParRef) "$ref"
+      lappend ${t}(ParUcd) "$ucd"
+      lappend ${t}(ParValue) "$parvalue"
+
+	    # filled in later
+	    lappend ${t}(ParDescription) {}
+
+	    set T(tree,prev) $name
+	}
 	PARAMref -
 	INFO -
 	LINK -
@@ -383,4 +430,3 @@ proc VOTElemEndCB {t name args} {
     }
     return {}
 }
-

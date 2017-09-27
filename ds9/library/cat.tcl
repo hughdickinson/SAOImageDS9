@@ -320,6 +320,7 @@ proc CATLoadDone {varname} {
     }
 
     CATSortMenu $varname
+    CATConfigSymbols $varname
     CATConfigCols $varname
     CATColsMenu $varname
     CATTable $varname
@@ -591,7 +592,7 @@ proc CATGenerate {varname} {
 
     ARStatus $varname [msgcat::mc {Plotting Regions}]
 
-    # delete any previous 
+    # delete any previous
     if {[info commands $var(frame)] != {}} {
 	if {[$var(frame) has fits]} {
 	    $var(frame) marker catalog $varname delete
@@ -663,7 +664,7 @@ proc CATGenerateUpdate {varname row} {
     if {![$var(frame) has fits]} {
 	return
     }
-    
+
     set id [$var(frame) get marker catalog "\{${varname}.${row}\}" id]
     set sel [$var(frame) get marker catalog $id select]
     set hh [$var(frame) get marker catalog $id highlite]
@@ -709,7 +710,7 @@ proc CATValidDB {varname} {
     upvar #0 $varname var
     global $varname
 
-    if {[info exists var(Nrows)] && 
+    if {[info exists var(Nrows)] &&
 	[info exists var(Ncols)] &&
 	[info exists var(HLines)] &&
 	[info exists var(Header)]} {
@@ -879,6 +880,74 @@ proc CATColsCmd {varname} {
     CATGenerate $varname
 }
 
+proc CATConfigSymbols {varname} {
+  upvar #0 $varname var
+  global $varname
+  global $var(symdb)
+  global $var(catdb)
+
+  if {![info exists $var(symdb)]} {
+    puts {Missing symdb!}
+    return
+  }
+
+  # Look for UCDs for data fields
+  set symbolsize {}
+  set symbolsize2 {}
+  set symbolangle {}
+  set symboltext {}
+
+  set db $var(catdb)
+  upvar #0 $db T
+  for {set cc 0} {$cc < $T(Ncols)} {incr cc} {
+      if {[info exists ${db}(Ucd)]} {
+        switch -- [string tolower [lindex [split [lindex $T(Ucd) $cc] ";" ] 0 ] ] {
+          phys.size.smajaxis {set symbolsize [lindex $T(Header) $cc]}
+          phys.size.sminaxis {set symbolsize2 [lindex $T(Header) $cc]}
+          pos.posang {set symbolangle [lindex $T(Header) $cc]}
+          meta.id {set symboltext [lindex $T(Header) $cc]}
+        }
+      }
+  }
+
+  # Look for UCDs for specific parameters
+  set fieldOrientAng {}
+  for {set cc 0} {$cc < $T(Nparams)} {incr cc} {
+      if {[info exists ${db}(ParUcd)]} {
+        switch -- [string tolower [lindex [split [lindex $T(ParUcd) $cc] ";" ] 0 ] ] {
+          pos.posang {set fieldOrientAng [lindex $T(ParValue) $cc]}
+        }
+      }
+  }
+
+  set snsize [starbase_colnum $var(symdb) size]
+  set snsize2 [starbase_colnum $var(symdb) size2]
+  set snshape [starbase_colnum $var(symdb) shape]
+  set snunits [starbase_colnum $var(symdb) units]
+  set snangle [starbase_colnum $var(symdb) angle]
+  set sntext [starbase_colnum $var(symdb) text]
+
+  set row [starbase_nrows $var(symdb)]
+
+  if { [string length $symbolsize] > 0 && [string length $symbolsize2] > 0} {
+    starbase_set $var(symdb) $row $snsize "\$$symbolsize"
+    starbase_set $var(symdb) $row $snsize2 "\$$symbolsize2"
+    starbase_set $var(symdb) $row $snunits physical
+    starbase_set $var(symdb) $row $snshape ellipse
+  }
+  if { [string length $symbolangle] > 0 } {
+    if { $fieldOrientAng eq {} } {
+      starbase_set $var(symdb) $row $snangle "\$$symbolangle"
+    } else {
+      starbase_set $var(symdb) $row $snangle "\$$symbolangle + $fieldOrientAng"
+    }
+  }
+  if { [string length $symboltext] > 0 } {
+    starbase_set $var(symdb) $row $sntext "\$$symboltext"
+  }
+
+}
+
 proc CATConfigCols {varname} {
     upvar #0 $varname var
     global $varname
@@ -927,7 +996,7 @@ proc CATConfigCols {varname} {
 	    # default
 	    set var(colx) [starbase_colname $var(catdb) 1]
 	    set var(coly) [starbase_colname $var(catdb) 2]
-	    
+
 	    return
 	}
 	default {
