@@ -929,12 +929,20 @@ proc CATConfigSymbols {varname} {
 
   set row [starbase_nrows $var(symdb)]
 
-  if { [string length $symbolsize] > 0 && [string length $symbolsize2] > 0} {
+  if { $symbolsize ne {} } {
     starbase_set $var(symdb) $row $snsize "\$$symbolsize"
+    starbase_set $var(symdb) $row $snunits physical
+  }
+  if { $symbolsize2 ne {} } {
     starbase_set $var(symdb) $row $snsize2 "\$$symbolsize2"
     starbase_set $var(symdb) $row $snunits physical
+  }
+  if { $symbolsize ne {} && $symbolsize2 ne {} } {
+    starbase_set $var(symdb) $row $snshape ellipse
+  } else {
     starbase_set $var(symdb) $row $snshape ellipse
   }
+  
   if { [string length $symbolangle] > 0 } {
     if { $fieldOrientAng eq {} } {
       starbase_set $var(symdb) $row $snangle "\$$symbolangle"
