@@ -363,7 +363,6 @@ class FitsImage {
 
   Vector wcs2pix(Vector, Coord::CoordSystem, Coord::SkyFrame);
   Vector* wcs2pix(Vector*, int, Coord::CoordSystem, Coord::SkyFrame);
-  double wcsdist(Vector, Vector, Coord::CoordSystem);
 
   double pix2wcsx(double, Coord::CoordSystem, int);
   double wcs2pixx(double, Coord::CoordSystem, int);
@@ -388,7 +387,13 @@ class FitsImage {
   {return (wcs_ && wcs_[sys-Coord::WCS]) ? wcs_[sys-Coord::WCS]->wcsname : NULL;}
   Coord::Orientation getWCSOrientation(Coord::CoordSystem, Coord::SkyFrame);
   double getWCSRotation(Coord::CoordSystem, Coord::SkyFrame);
+  double getWCSDist(Vector, Vector, Coord::CoordSystem);
+#ifndef NEWWCS
   Vector getWCScdelt(Coord::CoordSystem);
+#else
+  double getWCSPixelSize(Coord::CoordSystem);
+  double getWCSPixelArea(Coord::CoordSystem);
+#endif
   
 #ifdef NEWWCS
   void setAstSystem(AstFrameSet*, Coord::CoordSystem);
